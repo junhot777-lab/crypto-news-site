@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crypto News & Upbit 시세 모니터</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b0f1a;
+      color: #f5f5f5;
+    }
+
+    header {
+      padding: 16px 24px;
+      background: #111827;
+      border-bottom: 1px solid #1f2933;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .container {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+
+    /* 왼쪽: 뉴스 리스트 */
+    .news-pane {
+      flex: 2.5;
+      padding: 16px 24px;
+      overflow-y: auto;
+      border-right: 1px solid #1f2933;
+    }
+
+    .news-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #1f2933;
+    }
+
+    .news-item:last-child {
+      border-bottom: none;
+    }
+
+    .news-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .news-title a {
+      color: #e5e7eb;
+      text-decoration: none;
+    }
+
+    .news-title a:hover {
+      text-decoration: underline;
+    }
+
+    .news-meta {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .news-summary {
+      font-size: 13px;
+      color: #d1d5db;
+    }
+
+    /* 오른쪽: 시세창 */
+    .sidebar {
+      flex: 1;
+      padding: 16px;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sidebar-card {
+      background: radial-gradient(circle at top, #111827, #020617);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .coin-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .coin-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #f97316;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .coin-circle.eth {
+      border-color: #3b82f6;
+    }
+
+    .price-value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .price-krw {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .updated-at {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 4px;
+      display: inline-block;
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .small-note {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+        height: auto;
+      }
+      .news-pane {
+        height: auto;
+      }
+      .sidebar {
+        border-top: 1px solid #1f2933;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>한국 암호화폐 뉴스 모니터</h1>
+      <div class="tagline">조선일보 · 동아일보 경제 기사 + 업비트 실시간 시세</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- 뉴스 영역 -->
+    <main class="news-pane">
+      {% for item in news_list %}
+      <article class="news-item">
+        <div class="news-title">
+          <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">
+            [{{ item.source }}] {{ item.title }}
+          </a>
+        </div>
+        <div class="news-meta">
+          {{ item.published }}
+        </div>
+        {% if item.summary %}
+        <div class="news-summary">
+          {{ item.summary | safe }}
+        </div>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </main>
+
+    <!-- 오른쪽 시세창 -->
+    <aside class="sidebar">
+      <section class="sidebar-card">
+        <div class="sidebar-title">실시간 시세 (Upbit · KRW)</div>
+
+        <div class="price-row">
+          <div class="coin-label">
+            <div class="coin-circle">BTC</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">비트코인</div>
+              <div class="price-krw">KRW-BTC</div>
+            </div>
+          </div>
+          <div>
+            <div id="btc-price" class="price-value">-</div>
+          </div>
+        </div>
+
+        <div class="price-row">
+          <div class="coin-label">
+            <div class="coin-circle eth">ETH</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">이더리움</div>
+              <div class="price-krw">KRW-ETH</div>
+            </div>
+          </div>
+          <div>
+            <div id="eth-price" class="price-value">-</div>
+          </div>
+        </div>
+
+        <div class="updated-at" id="price-updated">
+          <span class="status-dot"></span>
+          <span class="status-text">시세 불러오는 중...</span>
+        </div>
+        <div class="small-note">
+          데이터 출처: Upbit 공개 시세 API (조회 전용)
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    function formatNumberKRW(value) {
+      if (value == null) return "-";
+      try {
+        return Number(value).toLocaleString("ko-KR") + " 원";
+      } catch {
+        return value + " 원";
+      }
+    }
+
+    async function loadPrices() {
+      const statusText = document.querySelector(".status-text");
+      const dot = document.querySelector(".status-dot");
+
+      try {
+        const resp = await fetch("/api/prices");
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const data = await resp.json();
+
+        document.getElementById("btc-price").textContent = formatNumberKRW(
+          data.BTC_KRW
+        );
+        document.getElementById("eth-price").textContent = formatNumberKRW(
+          data.ETH_KRW
+        );
+
+        const updated = data.timestamp || "";
+        const updatedEl = document.getElementById("price-updated");
+        updatedEl.innerHTML =
+          '<span class="status-dot"></span>' +
+          '<span class="status-text">업데이트: ' +
+          updated +
+          "</span>";
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = "시세 로딩 실패 (잠시 후 자동 재시도)";
+        dot.style.background = "#f97316";
+      }
+    }
+
+    // 첫 로딩 + 5초마다 갱신
+    loadPrices();
+    setInterval(loadPrices, 5000);
+  </script>
+</body>
+</html>
