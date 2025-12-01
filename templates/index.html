@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>Crypto News & Upbit 시세 모니터</title>
+  <title>한국 암호화폐 뉴스 & 시세 모니터</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -37,9 +37,9 @@
       height: calc(100vh - 60px);
     }
 
-    /* 왼쪽: 뉴스 리스트 */
+    /* 뉴스 영역 */
     .news-pane {
-      flex: 2.5;
+      flex: 2.7;
       padding: 16px 24px;
       overflow-y: auto;
       border-right: 1px solid #1f2933;
@@ -80,9 +80,9 @@
       color: #d1d5db;
     }
 
-    /* 오른쪽: 시세창 */
+    /* 오른쪽 사이드바 */
     .sidebar {
-      flex: 1;
+      flex: 1.3;
       padding: 16px;
       background: #020617;
       display: flex;
@@ -136,6 +136,9 @@
     .price-value {
       font-size: 16px;
       font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
     .price-krw {
@@ -163,6 +166,23 @@
       color: #9ca3af;
     }
 
+    .fx-row {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #1f2937;
+      font-size: 12px;
+    }
+
+    .fx-label {
+      color: #9ca3af;
+      margin-bottom: 3px;
+    }
+
+    .fx-value {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
     .small-note {
       font-size: 10px;
       color: #6b7280;
@@ -187,7 +207,9 @@
   <header>
     <div>
       <h1>한국 암호화폐 뉴스 모니터</h1>
-      <div class="tagline">조선일보 · 동아일보 경제 기사 + 업비트 실시간 시세</div>
+      <div class="tagline">
+        조선일보 · 동아일보 · 중앙일보 경제 기사 + 업비트 실시간 시세 · USD/KRW 환율
+      </div>
     </div>
   </header>
 
@@ -213,7 +235,7 @@
       {% endfor %}
     </main>
 
-    <!-- 오른쪽 시세창 -->
+    <!-- 오른쪽 시세 & 환율 -->
     <aside class="sidebar">
       <section class="sidebar-card">
         <div class="sidebar-title">실시간 시세 (Upbit · KRW)</div>
@@ -227,7 +249,14 @@
             </div>
           </div>
           <div>
-            <div id="btc-price" class="price-value">-</div>
+            <!-- 가격 클릭 시 업비트 BTC 차트로 이동 -->
+            <div
+              id="btc-price"
+              class="price-value"
+              onclick="window.open('https://upbit.com/exchange?code=CRIX.UPBIT.KRW-BTC', '_blank')"
+            >
+              -
+            </div>
           </div>
         </div>
 
@@ -240,7 +269,14 @@
             </div>
           </div>
           <div>
-            <div id="eth-price" class="price-value">-</div>
+            <!-- 가격 클릭 시 업비트 ETH 차트로 이동 -->
+            <div
+              id="eth-price"
+              class="price-value"
+              onclick="window.open('https://upbit.com/exchange?code=CRIX.UPBIT.KRW-ETH', '_blank')"
+            >
+              -
+            </div>
           </div>
         </div>
 
@@ -248,8 +284,14 @@
           <span class="status-dot"></span>
           <span class="status-text">시세 불러오는 중...</span>
         </div>
+
+        <div class="fx-row">
+          <div class="fx-label">USD/KRW 환율</div>
+          <div id="fx-usd-krw" class="fx-value">-</div>
+        </div>
+
         <div class="small-note">
-          데이터 출처: Upbit 공개 시세 API (조회 전용)
+          시세: Upbit 공개 API · 환율: 공개 환율 API (조회 전용)
         </div>
       </section>
     </aside>
@@ -262,6 +304,18 @@
         return Number(value).toLocaleString("ko-KR") + " 원";
       } catch {
         return value + " 원";
+      }
+    }
+
+    function formatNumber(value, digits = 2) {
+      if (value == null) return "-";
+      try {
+        return Number(value).toLocaleString("ko-KR", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      } catch {
+        return value;
       }
     }
 
@@ -281,6 +335,10 @@
           data.ETH_KRW
         );
 
+        const fx = data.USDKRW;
+        document.getElementById("fx-usd-krw").textContent =
+          fx ? formatNumber(fx, 2) + " 원" : "-";
+
         const updated = data.timestamp || "";
         const updatedEl = document.getElementById("price-updated");
         updatedEl.innerHTML =
@@ -290,14 +348,13 @@
           "</span>";
       } catch (e) {
         console.error(e);
-        statusText.textContent = "시세 로딩 실패 (잠시 후 자동 재시도)";
+        statusText.textContent = "시세/환율 로딩 실패 (잠시 후 자동 재시도)";
         dot.style.background = "#f97316";
       }
     }
 
-    // 첫 로딩 + 5초마다 갱신
     loadPrices();
-    setInterval(loadPrices, 5000);
+    setInterval(loadPrices, 7000);
   </script>
 </body>
 </html>
