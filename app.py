@@ -7,7 +7,7 @@ from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
-# ✅ 한국 경제 뉴스 RSS
+# 한국 경제 뉴스 RSS
 NEWS_FEEDS = [
     {
         "name": "조선일보 경제",
@@ -28,9 +28,7 @@ NEWS_FEEDS = [
 
 
 def fetch_news(limit=80):
-    """여러 RSS에서 기사 모아서 최신순 정렬."""
     items = []
-
     for feed_info in NEWS_FEEDS:
         try:
             feed = feedparser.parse(feed_info["url"])
@@ -39,8 +37,8 @@ def fetch_news(limit=80):
             continue
 
         for entry in feed.entries[:40]:
-            published = None
-            published_ts = None
+            published_ts = 0
+            published = ""
 
             if hasattr(entry, "published_parsed") and entry.published_parsed:
                 published_ts = time.mktime(entry.published_parsed)
@@ -48,7 +46,7 @@ def fetch_news(limit=80):
                     published_ts
                 ).strftime("%Y-%m-%d %H:%M")
             else:
-                published = getattr(entry, "published", "") or ""
+                published = getattr(entry, "published", "")
 
             items.append(
                 {
@@ -57,7 +55,7 @@ def fetch_news(limit=80):
                     "summary": getattr(entry, "summary", "")[:200],
                     "source": feed_info["source"],
                     "published": published,
-                    "published_ts": published_ts or 0,
+                    "published_ts": published_ts,
                 }
             )
 
@@ -73,10 +71,6 @@ def index():
 
 @app.route("/api/prices")
 def api_prices():
-    """
-    업비트 현재가: KRW-BTC, KRW-ETH
-    + USD/KRW 환율 (exchangerate.host 사용)
-    """
     upbit_url = "https://api.upbit.com/v1/ticker"
     upbit_params = {"markets": "KRW-BTC,KRW-ETH"}
 
@@ -87,28 +81,31 @@ def api_prices():
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-    # 1) 업비트 시세
+    # 업비트
     try:
         resp = requests.get(upbit_url, params=upbit_params, timeout=3)
         resp.raise_for_status()
         data = resp.json()
         for item in data:
-            market = item.get("market")
-            trade_price = item.get("trade_price")
-            if market == "KRW-BTC":
-                prices["BTC_KRW"] = trade_price
-            elif market == "KRW-ETH":
-                prices["ETH_KRW"] = trade_price
+            if item["market"] == "KRW-BTC":
+                prices["BTC_KRW"] = item["trade_price"]
+            elif item["market"] == "KRW-ETH":
+                prices["ETH_KRW"] = item["trade_price"]
     except Exception as e:
         print("[UPBIT ERROR]", e)
 
-    # 2) USD/KRW 환율 (안정적인 무료 API)
+    # USD/KRW 환율 (open.er-api)
     try:
-        fx_url = "https://api.exchangerate.host/latest?base=USD&symbols=KRW"
-        fx_resp = requests.get(fx_url, timeout=3)
+        fx_url = "https://open.er-api.com/v6/latest/USD"
+        fx_resp = requests.get(fx_url, timeout=5)
         fx_resp.raise_for_status()
         fx_data = fx_resp.json()
-        prices["USDKRW"] = fx_data["rates"]["KRW"]
+
+        if "rates" in fx_data and "KRW" in fx_data["rates"]:
+            prices["USDKRW"] = fx_data["rates"]["KRW"]
+        else:
+            print("[FX ERROR] 'rates' missing:", fx_data)
+
     except Exception as e:
         print("[FX ERROR]", e)
 
@@ -116,5 +113,4 @@ def api_prices():
 
 
 if __name__ == "__main__":
-    # 로컬 테스트용
     app.run(host="0.0.0.0", port=5000, debug=True)
