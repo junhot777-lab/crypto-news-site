@@ -11,17 +11,17 @@ app = Flask(__name__)
 NEWS_FEEDS = [
     {
         "name": "조선일보 경제",
-        "url": "https://www.chosun.com/arc/outboundfeeds/rss/category/economy/?outputType=xml",  # 조선 경제 RSS :contentReference[oaicite:0]{index=0}
+        "url": "https://www.chosun.com/arc/outboundfeeds/rss/category/economy/?outputType=xml",
         "source": "조선일보",
     },
     {
         "name": "동아일보 경제",
-        "url": "https://rss.donga.com/economy.xml",  # 동아 경제 RSS :contentReference[oaicite:1]{index=1}
+        "url": "https://rss.donga.com/economy.xml",
         "source": "동아일보",
     },
     {
         "name": "중앙일보 경제",
-        "url": "http://rss.joins.com/joins_money_list.xml",  # 중앙 머니(경제) RSS :contentReference[oaicite:2]{index=2}
+        "url": "http://rss.joins.com/joins_money_list.xml",
         "source": "중앙일보",
     },
 ]
@@ -75,10 +75,8 @@ def index():
 def api_prices():
     """
     업비트 현재가: KRW-BTC, KRW-ETH
-    GET https://api.upbit.com/v1/ticker?markets=KRW-BTC,KRW-ETH :contentReference[oaicite:3]{index=3}
-    + 환율: USD/KRW (기본적인 무료 공개 API 사용)
+    + USD/KRW 환율 (exchangerate.host 사용)
     """
-    # 1) 업비트 시세
     upbit_url = "https://api.upbit.com/v1/ticker"
     upbit_params = {"markets": "KRW-BTC,KRW-ETH"}
 
@@ -89,6 +87,7 @@ def api_prices():
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
+    # 1) 업비트 시세
     try:
         resp = requests.get(upbit_url, params=upbit_params, timeout=3)
         resp.raise_for_status()
@@ -103,18 +102,13 @@ def api_prices():
     except Exception as e:
         print("[UPBIT ERROR]", e)
 
-    # 2) 환율 USD/KRW (무료 공개 API: api.manana.kr) :contentReference[oaicite:4]{index=4}
+    # 2) USD/KRW 환율 (안정적인 무료 API)
     try:
-        fx_url = "https://api.manana.kr/exchange/rate/KRW,USD.json"
+        fx_url = "https://api.exchangerate.host/latest?base=USD&symbols=KRW"
         fx_resp = requests.get(fx_url, timeout=3)
         fx_resp.raise_for_status()
         fx_data = fx_resp.json()
-        # 응답 구조 예: [{"name":"미국 USD","rate":1310.5,"date":"2025-11-30",...}, ...]
-        for item in fx_data:
-            if item.get("name", "").startswith("미국") or item.get("code") == "USD":
-                # KRW 기준 USD 환율
-                prices["USDKRW"] = item.get("rate")
-                break
+        prices["USDKRW"] = fx_data["rates"]["KRW"]
     except Exception as e:
         print("[FX ERROR]", e)
 
@@ -122,4 +116,5 @@ def api_prices():
 
 
 if __name__ == "__main__":
+    # 로컬 테스트용
     app.run(host="0.0.0.0", port=5000, debug=True)
